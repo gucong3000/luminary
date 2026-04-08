@@ -26,10 +26,10 @@ This guide covers running Luminary directly on a server without Docker, using ei
 
 ```bash
 # For Ubuntu/Debian
-sudo apt-get install php php-ldap php-mbstring php-xml php-curl
+sudo apt-get install php php-fpm php-ldap php-mbstring php-xml php-curl php-imagick
 
 # For CentOS/RHEL
-sudo yum install php php-ldap php-mbstring php-xml php-curl
+sudo yum install php php-fpm php-ldap php-mbstring php-xml php-curl php-imagick
 ```
 
 ### Required PHP Packages
@@ -43,37 +43,31 @@ sudo yum install php php-ldap php-mbstring php-xml php-curl
 ### 1. Download the Application
 
 ```bash
+# Create required directories
+sudo mkdir -p /var/www/luminary/sessions
+
 # Clone the repository
 git clone https://github.com/wheelybird/luminary.git
-cd luminary
+sudo cp -r luminary/www/* /var/www/luminary/
 
-# Or download a release
-wget https://github.com/wheelybird/luminary/archive/refs/heads/main.tar.gz
-tar -xzf main.tar.gz
-cd luminary-main
+# Or download the source archive
+curl -fSL https://github.com/wheelybird/luminary/archive/refs/heads/master.tar.gz | sudo tar -xzvf - -C /var/www/luminary --strip-components=2 luminary-master/www
 ```
 
-### 2. Install PHPMailer
+### 2. Set Up Application Directories
+
+```bash
+sudo chown -R www-data:www-data /var/www/luminary
+sudo chmod -R 755 /var/www/luminary
+sudo chmod 700 /var/www/luminary/sessions
+```
+
+### 3. Install PHPMailer
 
 ```bash
 # Download PHPMailer
-cd /opt
-wget https://github.com/PHPMailer/PHPMailer/archive/refs/tags/v7.0.0.tar.gz
-tar -xzf v7.0.0.tar.gz
-mv PHPMailer-7.0.0 PHPMailer
-```
-
-### 3. Set Up Application Directory
-
-```bash
-# Copy application files to web root
-sudo mkdir -p /var/www/luminary
-sudo cp -r www/* /var/www/luminary/
-sudo chown -R www-data:www-data /var/www/luminary
-
-# Create required directories
-sudo mkdir -p /var/www/luminary/sessions
-sudo chmod 700 /var/www/luminary/sessions
+sudo mkdir -p /opt/PHPMailer/
+curl -fSL https://github.com/PHPMailer/PHPMailer/archive/refs/heads/master.tar.gz | sudo tar -xzvf - -C /opt/PHPMailer/  --strip-components=1
 ```
 
 ### 4. Create Configuration File
@@ -127,7 +121,7 @@ sudo chown www-data:www-data /etc/luminary.conf
 ```bash
 # Ubuntu/Debian
 sudo apt-get update
-sudo apt-get install apache2 libapache2-mod-php php-ldap php-mbstring php-xml php-curl
+sudo apt-get install apache2 libapache2-mod-php php-ldap php-mbstring php-xml php-curl php-imagick
 
 # Enable required modules
 sudo a2enmod php8.1  # Adjust version as needed
@@ -238,7 +232,7 @@ sudo systemctl restart apache2
 ```bash
 # Ubuntu/Debian
 sudo apt-get update
-sudo apt-get install nginx php-fpm php-ldap php-mbstring php-xml php-curl
+sudo apt-get install nginx php-fpm php-ldap php-mbstring php-xml php-curl php-imagick
 
 # Start PHP-FPM
 sudo systemctl start php8.1-fpm  # Adjust version as needed
@@ -473,6 +467,7 @@ extension=ldap
 extension=mbstring
 extension=xml
 extension=curl
+extension=imagick
 ```
 
 Restart the web server after changes.

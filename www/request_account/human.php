@@ -33,8 +33,9 @@ function random_string($length = 6) {
 
 ##
 
-$image = imagecreatetruecolor($image_width, $image_height);
-imageantialias($image, true);
+$image = new Imagick();
+$image->newImage($image_width, $image_height, new ImagickPixel('white'));
+$image->setImageFormat('png');
 
 $cols = [];
 
@@ -43,26 +44,34 @@ $g = rand(100, 200);
 $b = rand(100, 200);
  
 for($i = 0; $i < 5; $i++) {
-  $cols[] = imagecolorallocate($image, $r - 20*$i, $g - 20*$i, $b - 20*$i);
+  $cr = max(0, $r - 20*$i);
+  $cg = max(0, $g - 20*$i);
+  $cb = max(0, $b - 20*$i);
+  $cols[] = "rgb($cr,$cg,$cb)";
 }
  
-imagefill($image, 0, 0, $cols[0]);
+$bgDraw = new ImagickDraw();
+$bgDraw->setFillColor(new ImagickPixel($cols[0]));
+$bgDraw->setStrokeOpacity(0);
+$bgDraw->rectangle(0, 0, $image_width, $image_height);
+$image->drawImage($bgDraw);
 
 $thickness = rand(2, 10);
 
 for($i = 0; $i < 10; $i++) {
-  imagesetthickness($image, $thickness);
   $line_col = $cols[rand(1,4)];
-  imagerectangle($image, rand(-$thickness, ($image_width - $thickness)),
-                         rand(-$thickness, $thickness),
-                         rand(-$thickness, ($image_width - $thickness)),
-                         rand(($image_height - $thickness), ($image_width / 2)),
-                 $line_col);
+  $noiseDraw = new ImagickDraw();
+  $noiseDraw->setStrokeWidth($thickness);
+  $noiseDraw->setStrokeColor(new ImagickPixel($line_col));
+  $noiseDraw->setFillOpacity(0);
+  $noiseDraw->rectangle(rand(-$thickness, ($image_width - $thickness)),
+                        rand(-$thickness, $thickness),
+                        rand(-$thickness, ($image_width - $thickness)),
+                        rand(($image_height - $thickness), ($image_width / 2)));
+  $image->drawImage($noiseDraw);
 }
  
-$black = imagecolorallocate($image, 0, 0, 0);
-$white = imagecolorallocate($image, 255, 255, 255);
-$textcols = [$black, $white];
+$textcols = ['black', 'white'];
 
 $fonts = glob(dirname(__FILE__).'/fonts/*.ttf');
 $num_chars = 6;
@@ -79,10 +88,17 @@ for($i = 0; $i < $num_chars; $i++) {
   $txt_col = $textcols[rand(0,1)];
   $txt_font =  $fonts[array_rand($fonts)];
   $txt = $human_proof[$i];
-  imagettftext($image, $size, $angle, (int)$txt_x, (int)$txt_y, $txt_col, $txt_font, $txt);
+  $textDraw = new ImagickDraw();
+  $textDraw->setFont($txt_font);
+  $textDraw->setFontSize($size);
+  $textDraw->setFillColor(new ImagickPixel($txt_col));
+  $image->annotateImage($textDraw, (int)$txt_x, (int)$txt_y, $angle, $txt);
 }
 
 header('Content-type: image/png');
-imagepng($image);
-imagedestroy($image);
+header('Cache-Control: no-cache, must-revalidate');
+header('Pragma: no-cache');
+echo $image;
+$image->clear();
+$image->destroy();
 ?>

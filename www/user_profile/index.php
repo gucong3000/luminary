@@ -113,12 +113,10 @@ foreach ($attribute_map as $attribute => $attr_config) {
         $upload_error = "Profile photo must be a JPEG image. Uploaded file type: " . htmlspecialchars($mime_type);
       }
 
-      // Verify it's actually a valid JPEG by attempting to load it
-      $image_check = @imagecreatefromjpeg($_FILES[$attribute]['tmp_name']);
-      if ($image_check === false) {
+      // Verify it's actually a valid JPEG by checking the image type
+      $image_info = @getimagesize($_FILES[$attribute]['tmp_name']);
+      if ($image_info === false || !isset($image_info[2]) || $image_info[2] !== IMAGETYPE_JPEG) {
         $upload_error = "The uploaded file is not a valid JPEG image.";
-      } else {
-        imagedestroy($image_check);
       }
 
       if ($upload_error) {
